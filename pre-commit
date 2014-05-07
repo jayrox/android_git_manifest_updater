@@ -1,0 +1,32 @@
+#!/bin/sh
+# Configuration
+# -------------
+# The Manifest path is relative to THIS script.
+# If you copy-and-paste this into your pre-commit hook
+# and your AndroidManifest.xml is in the root of your repo
+# then the path would be:
+MANIFEST="/path/to/AndroidManifest.xml"
+STRINGS="/path/to/res/values/strings.xml"
+
+# Script DO NOT MODIFY (unless you want to)
+
+declare -x SCRIPTPATH="${0}"
+
+MFULLPATH=${SCRIPTPATH%/*}/$MANIFEST
+SFULLPATH=${SCRIPTPATH%/*}/$STRINGS
+
+if [ -f $MFULLPATH ] && [ -f $SFULLPATH ]
+then
+	IFS='.' read -a nu1 <<< $(git describe --tags --long);
+	IFS=' ' read -a nu2 <<< "${nu1[0]}"
+	IFS='-' read -a nu3 <<< "${nu2[1]}"
+
+	versionCode="${nu2[0]}${nu3[0]}${nu3[1]}";
+	versionName="${nu2[0]}.${nu3[0]}.${nu3[1]}";
+    sed "s/android:versionCode=\"[0-9]*\"/android:versionCode=\"${versionCode}\"/" $MFULLPATH > $MFULLPATH.tmp && mv $MFULLPATH.tmp $MFULLPATH
+    sed "s/android:versionName=\"[0-9\.]*\"/android:versionName=\"${versionName}\"/" $MFULLPATH > $MFULLPATH.tmp && mv $MFULLPATH.tmp $MFULLPATH
+	sed "s/<string name=\"version\">[0-9.]*<\/string>/<string name=\"version\">${versionName}<\/string>/" $SFULLPATH > $SFULLPATH.tmp && mv $SFULLPATH.tmp $SFULLPATH
+	
+    echo "Updated android:versionCode to ${versionCode}";
+	echo "Updated android:versionName to ${versionName}";
+fi;
